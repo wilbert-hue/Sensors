@@ -1004,9 +1004,14 @@ export function prepareGroupedBarData(
             }
           }
 
-          // Map child geography to parent if parent is selected
+          // Map child geography to parent ONLY when the child is NOT itself selected.
+          // If both "North America" and "U.S." are selected, keep U.S. as its own bar.
           for (const [region, countries] of Object.entries(regionToCountriesStacked)) {
-            if (countries.includes(geography) && geographies.includes(region)) {
+            if (
+              countries.includes(geography) &&
+              geographies.includes(region) &&
+              !geographies.includes(geography)   // ← only collapse when child not explicitly chosen
+            ) {
               geography = region
               break
             }
@@ -1103,7 +1108,11 @@ export function prepareGroupedBarData(
           }
 
           for (const [region, countries] of Object.entries(regionToCountries)) {
-            if (countries.includes(record.geography) && geographies.includes(region)) {
+            if (
+              countries.includes(record.geography) &&
+              geographies.includes(region) &&
+              !geographies.includes(record.geography)  // ← only collapse when child not explicitly chosen
+            ) {
               mappedGeo = region
               break
             }
