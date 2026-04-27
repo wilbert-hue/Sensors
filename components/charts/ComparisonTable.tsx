@@ -40,7 +40,8 @@ export function ComparisonTable({ title, height = 600 }: ComparisonTableProps) {
       return (Math.pow(b / a, 1 / n) - 1) * 100
     }
 
-    // Share %: mean value 2026–2033 per row vs visible rows (not filter year slider)
+    // Share %: mean 2026–2033 for this segment ÷ sum of those means within the same geography only
+    // (multi-region selection must not pool denominators across countries)
     const yearIndices: number[] = []
     for (let y = COMPARISON_PERIOD_START; y <= COMPARISON_PERIOD_END; y++) {
       yearIndices.push(y)
@@ -50,7 +51,11 @@ export function ComparisonTable({ title, height = 600 }: ComparisonTableProps) {
       return yearIndices.reduce((s, y) => s + (ts[y] || 0), 0) / yearIndices.length
     }
     const avgs = filtered.map(r => periodAvg(r.time_series))
-    const shareDenom = avgs.reduce((a, b) => a + b, 0)
+    const periodAvgSumByGeography = new Map<string, number>()
+    for (let i = 0; i < filtered.length; i++) {
+      const g = filtered[i]!.geography
+      periodAvgSumByGeography.set(g, (periodAvgSumByGeography.get(g) ?? 0) + avgs[i]!)
+    }
 
     // Growth %: total change 2026 → 2033 (aligned with CAGR window)
     const growth2026to2033 = (ts: Record<number, number>) => {
@@ -60,24 +65,27 @@ export function ComparisonTable({ title, height = 600 }: ComparisonTableProps) {
       return ((b - a) / a) * 100
     }
 
-    return filtered.map((record, i) => ({
-      geography: record.geography,
-      segment: record.segment,
-      segmentType: record.segment_type,
-      currentValue: record.time_series[COMPARISON_VALUE_YEAR] || 0,
-      startValue: record.time_series[COMPARISON_PERIOD_START] || 0,
-      endValue: record.time_series[COMPARISON_PERIOD_END] || 0,
-      growth: growth2026to2033(record.time_series),
-      cagr: cagr2026to2033(record.time_series),
-      marketShare: shareDenom > 0 ? (avgs[i]! / shareDenom) * 100 : 0,
-      sparkline: Object.entries(record.time_series)
-        .filter(([y]) => {
-          const yi = parseInt(y, 10)
-          return yi >= COMPARISON_PERIOD_START && yi <= COMPARISON_PERIOD_END
-        })
-        .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
-        .map(([, value]) => value)
-    }))
+    return filtered.map((record, i) => {
+      const geoShareDenom = periodAvgSumByGeography.get(record.geography) ?? 0
+      return {
+        geography: record.geography,
+        segment: record.segment,
+        segmentType: record.segment_type,
+        currentValue: record.time_series[COMPARISON_VALUE_YEAR] || 0,
+        startValue: record.time_series[COMPARISON_PERIOD_START] || 0,
+        endValue: record.time_series[COMPARISON_PERIOD_END] || 0,
+        growth: growth2026to2033(record.time_series),
+        cagr: cagr2026to2033(record.time_series),
+        marketShare: geoShareDenom > 0 ? (avgs[i]! / geoShareDenom) * 100 : 0,
+        sparkline: Object.entries(record.time_series)
+          .filter(([y]) => {
+            const yi = parseInt(y, 10)
+            return yi >= COMPARISON_PERIOD_START && yi <= COMPARISON_PERIOD_END
+          })
+          .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
+          .map(([, value]) => value)
+      }
+    })
   }, [data, filters])
 
   const sortedData = useMemo(() => {
