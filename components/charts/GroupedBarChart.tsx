@@ -12,7 +12,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { CHART_THEME, getChartColor, CHART_COLORS } from '@/lib/chart-theme'
-import { filterData, prepareGroupedBarData, prepareIntelligentMultiLevelData, getUniqueGeographies, getUniqueSegments, getGeographyProportions } from '@/lib/data-processor'
+import { filterData, prepareGroupedBarData, prepareIntelligentMultiLevelData, getUniqueGeographies, getUniqueSegments, getGeographyProportions, getSelectedSegmentsForCurrentType } from '@/lib/data-processor'
 import { useDashboardStore } from '@/lib/store'
 import type { DataRecord } from '@/lib/types'
 
@@ -39,7 +39,8 @@ export function GroupedBarChart({ title, height = 400 }: GroupedBarChartProps) {
     const segmentsFromSameType = advancedSegments.filter(
       (seg: any) => seg.type === filters.segmentType
     )
-    const hasUserSelectedSegments = segmentsFromSameType.length > 0
+    // SegmentMultiSelect uses filters.segments only; advanced UI uses advancedSegments — both count
+    const hasUserSelectedSegments = getSelectedSegmentsForCurrentType(filters).length > 0
 
     // Determine effective aggregation level for BOTH filtering and chart preparation
     // When user selects a parent segment (like "Parenteral"), we want to show its children
@@ -101,7 +102,7 @@ export function GroupedBarChart({ title, height = 400 }: GroupedBarChartProps) {
       effectiveAggregationLevel,
       allSegmentNames,
       hasUserSelectedSegments,
-      selectedSegments: segmentsFromSameType.map((s: any) => s.segment),
+      selectedSegments: getSelectedSegmentsForCurrentType(filters),
       sampleFiltered: filtered.slice(0, 10).map(r => ({
         segment: r.segment,
         is_aggregated: r.is_aggregated,
@@ -113,8 +114,9 @@ export function GroupedBarChart({ title, height = 400 }: GroupedBarChartProps) {
 
     // CRITICAL: Verify that when user selected a parent segment, we got the child records
     // If we only have the parent segment in filtered data, something went wrong in filtering
-    if (hasUserSelectedSegments && segmentsFromSameType.length === 1) {
-      const selectedSegment = segmentsFromSameType[0].segment
+    const selectedForType = getSelectedSegmentsForCurrentType(filters)
+    if (hasUserSelectedSegments && selectedForType.length === 1) {
+      const selectedSegment = selectedForType[0]
       // Check if filtered data contains the selected segment directly (bad) or its children (good)
       const hasParentInData = allSegmentNames.includes(selectedSegment)
       const hasOnlyParent = hasParentInData && allSegmentNames.length === 1

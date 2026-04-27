@@ -249,35 +249,12 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
   },
   
   updateFilters: (newFilters) => {
+    // Dashboard is value-only (volume UI removed)
+    if ((newFilters as Partial<FilterState>).dataType === 'volume') {
+      newFilters = { ...newFilters, dataType: 'value' }
+    }
     console.log('🔧 Store: updateFilters called with:', newFilters)
     set((state) => {
-      // When switching to Volume, find a valid segment type that has volume data
-      if (newFilters.dataType === 'volume' && state.filters.dataType !== 'volume') {
-        const volumeRecords = state.data?.data.volume.geography_segment_matrix || []
-        const volumeSegmentTypes = new Set(volumeRecords.map(r => r.segment_type))
-        const allSegmentTypes = state.data ? Object.keys(state.data.dimensions.segments) : []
-
-        // Use current segment type if it has volume data, otherwise find the first one that does
-        let targetSegmentType = state.filters.segmentType
-        if (!volumeSegmentTypes.has(targetSegmentType)) {
-          if (volumeSegmentTypes.size > 0) {
-            // Use the first segment type that has volume records
-            targetSegmentType = Array.from(volumeSegmentTypes)[0]
-          } else if (allSegmentTypes.length > 0) {
-            // Fallback: use the first segment type from dimensions
-            targetSegmentType = allSegmentTypes[0]
-          }
-        }
-
-        console.log('🔧 Store: Switching to Volume - using segmentType:', targetSegmentType)
-        newFilters = {
-          ...newFilters,
-          segmentType: targetSegmentType,
-          segments: [], // Clear segments when switching data type
-          advancedSegments: [], // Clear advanced segments to keep UI in sync
-        } as any
-      }
-
       // If segmentType is changing, save current geographies and restore for new type
       if (newFilters.segmentType !== undefined && newFilters.segmentType !== state.filters.segmentType) {
         const oldSegmentType = state.filters.segmentType

@@ -9,7 +9,7 @@ import { Check, ChevronDown, ChevronRight } from 'lucide-react'
 // collapsible parent; all subsequent entries (until the next parent) are its
 // children. Add more here if your data uses different region names.
 const KNOWN_PARENT_GEOS = new Set([
-  'Global', 'World',
+  // Do not list "Global" here — it would incorrectly nest all regions under it in the flat list.
   'North America', 'South America', 'Latin America', 'Central America',
   'Europe', 'Western Europe', 'Eastern Europe', 'Central Europe',
   'Asia Pacific', 'Asia-Pacific', 'APAC', 'East Asia', 'South Asia',

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:data": "node scripts/build-value-from-dataset.js && node scripts/import-customer-database.js"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

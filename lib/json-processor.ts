@@ -1334,11 +1334,8 @@ export async function processJsonDataAsync(
     }
     console.log(`Found ${segmentTypes.size} segment types:`, Array.from(segmentTypes))
 
-    // Remove "By Region" (and similar) from segment types - these are geography dimensions, not segments
-    segmentTypes.delete('By Region')
-    segmentTypes.delete('By State')
-    segmentTypes.delete('By Country')
-    console.log(`Segment types after removing geography types:`, Array.from(segmentTypes))
+    // Keep By Region / By Country as normal segment types (dataset uses them under Global and regions)
+    console.log(`Segment types (all):`, Array.from(segmentTypes))
 
     // Filter out geographies that only exist in segmentation structure but have no actual data
     // in value/volume files (e.g., "Global" when only region/country-level data exists)
@@ -1395,10 +1392,14 @@ export async function processJsonDataAsync(
       await new Promise(resolve => setImmediate(resolve))
     }
 
-    // Process "By Region" data separately for geography-based records
-    // These records are NOT added to segment types but provide data for region/country geographies
+    // Optional second pass for geo segment types that exist in structure but were NOT in segmentTypes.
+    // If "By Region" / "By State" / "By Country" are already in segmentTypes, the main loop above
+    // already emitted those records — do not append again or every value is double-counted in charts.
     const geoSegmentTypes = ['By Region', 'By State', 'By Country']
     for (const geoSegType of geoSegmentTypes) {
+      if (segmentTypes.has(geoSegType)) {
+        continue
+      }
       // Check if this geo segment type exists in the structure data
       const hasGeoSegType = Object.values(structureData).some(
         (geo: any) => geo && typeof geo === 'object' && geo[geoSegType]
@@ -1434,8 +1435,11 @@ export async function processJsonDataAsync(
         )
         volumeRecords.push(...volumeRecs)
       }
-      // Also process "By Region" geography records for volume
+      // Also process "By Region" geography records for volume (only if not already in main loop)
       for (const geoSegType of geoSegmentTypes) {
+        if (segmentTypes.has(geoSegType)) {
+          continue
+        }
         const hasGeoSegType = Object.values(structureData).some(
           (geo: any) => geo && typeof geo === 'object' && geo[geoSegType]
         )

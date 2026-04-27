@@ -90,10 +90,23 @@ export function getFirstLevelSegments(
  * @param data - The comparison data
  * @returns The first segment type name or null
  */
+const SEGMENT_TYPE_ORDER = [
+  'By Product Type',
+  'By Offering',
+  'By Technology',
+  'By Spectral Range',
+  'By Form Factor',
+  'By End User',
+  'By Region',
+  'By Country'
+]
+
 export function getFirstSegmentType(data: ComparisonData | null): string | null {
   if (!data || !data.dimensions.segments) return null
-  
   const segmentTypes = Object.keys(data.dimensions.segments)
+  for (const preferred of SEGMENT_TYPE_ORDER) {
+    if (segmentTypes.includes(preferred)) return preferred
+  }
   return segmentTypes.length > 0 ? segmentTypes[0] : null
 }
 
