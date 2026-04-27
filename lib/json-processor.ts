@@ -1152,8 +1152,8 @@ async function processSegmentTypeAsync(
           cagr = data.CAGR
         }
       } else {
-        // Calculate CAGR from base year (2023) to forecast year
-        const cagrStartYear = allYears[0] + 4 // Base year = 2023 for 2019-2031 data
+        // Fallback: compound over the full year range in value.json (no Excel CAGR on this path)
+        const cagrStartYear = allYears[0]
         const cagrEndYear = allYears[allYears.length - 1]
         const startVal = timeSeries[cagrStartYear] || 0
         const endVal = timeSeries[cagrEndYear] || 0
